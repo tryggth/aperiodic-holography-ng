@@ -1,0 +1,10 @@
+name = "SpectreNG"
+version = "0.1.0"
+defaultTargets = ["spectreng"]
+
+[[lean_lib]]
+name = "SpectreNG"
+
+[[lean_exe]]
+name = "spectreng"
+root = "Main"

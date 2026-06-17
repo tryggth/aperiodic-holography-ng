@@ -1,0 +1,12 @@
+/.lake
+
+# Python virtual environment
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
