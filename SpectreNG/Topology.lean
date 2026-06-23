@@ -55,7 +55,7 @@ def stablePaths : List Path := [
   [Turn.l90, Turn.l60, Turn.straight, Turn.l60, Turn.r90]
 ]
 
-def verify_sieve_window (p : Path) : Bool :=  
+def verify_sieve_window (p : Path) : Bool :=
   decide (p ∈ stablePaths)
 
 def ValidBoundary (p : Path) : Prop :=
@@ -438,9 +438,16 @@ lemma exists_anchor_tile_existence {tiles : Patch} (p : Path) (h_comp : Complete
                                             | tail _ h_mem =>
                                               cases h_mem
 
+
+
 lemma exists_anchor_tile {tiles : Patch} (p : Path) (h_len : p.length = 5) (h_w_valid : ValidBoundary p)
   (t : PlacedTile) (h_anchor : IsAnchor t p tiles) : t = ⟨⟨0, 0, 0, 0⟩, 0⟩ := by
+  rcases t with ⟨loc, orient⟩
+  rcases h_anchor with ⟨h_mem, h_edge⟩
+  -- Unify the edge arrays against the 14-gon coordinate maps
   sorry
+
+
 
 /-- The ultimate theorem of the Aperiodic Holography Lock for a boundary lookahead window of size 5. -/
 theorem aperiodic_holography_lock (p : Path) (h_len : p.length = 5) (h_valid : ValidBoundary p) :
@@ -615,25 +622,25 @@ def IsSimpleClosedLoop (p : Path) : Prop :=
 def List.nodup {α : Type} [DecidableEq α] (l : List α) : List α := l.eraseDups
 
 -- Stub functions for structural list parsing of geometric elements
-def patchVertices : Patch → List LatticePoint  
-  | [] => []  
-  | t :: ts =>  
-    let v_t := (generateTileEdges t).map (fun | DirectedEdge.mk src _ _ => src)  
+def patchVertices : Patch → List LatticePoint
+  | [] => []
+  | t :: ts =>
+    let v_t := (generateTileEdges t).map (fun | DirectedEdge.mk src _ _ => src)
     v_t ++ patchVertices ts
 
-def patchEdges : Patch → List (LatticePoint × LatticePoint)  
-  | [] => []  
-  | t :: ts =>  
-    let e_t := (generateTileEdges t).map (fun | DirectedEdge.mk src tgt _ => (src, tgt))  
+def patchEdges : Patch → List (LatticePoint × LatticePoint)
+  | [] => []
+  | t :: ts =>
+    let e_t := (generateTileEdges t).map (fun | DirectedEdge.mk src tgt _ => (src, tgt))
     e_t ++ patchEdges ts
 
 def eulerCharacteristic (tiles : Patch) : Int :=
   (patchVertices tiles).nodup.length - (patchEdges tiles).nodup.length + tiles.length
 
-structure SieveContext where  
-  tiles : Patch  
-  p : Path  
-  h_val : ValidPatch tiles  
+structure SieveContext where
+  tiles : Patch
+  p : Path
+  h_val : ValidPatch tiles
   h_comp : CompletesPath tiles p
   h_euler : eulerCharacteristic tiles = 1
 
@@ -692,16 +699,18 @@ lemma validPatch_filter_sub (tiles : Patch) (f : PlacedTile → Bool) (h : Valid
   exact h.2 t1 ht1_orig t2 ht2_orig hdiff e1 he1 e2 he2 heq
 
 
-axiom mutatePathContiguous_local_invariant {t : PlacedTile} {p : Path} {e : DirectedEdge}
+
+lemma mutatePathContiguous_local_invariant {t : PlacedTile} {p : Path} {e : DirectedEdge}
   (_h_contig : AreEdgesContiguousInPath t p)
   (h_mem : e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 (mutatePathContiguous t p)) (h_not : e ∉ generateTileEdges t) :
-  e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 p
+  e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 p := by
+  sorry
 
-axiom mutatePathContiguous_int_adj {t : PlacedTile} {tiles : Patch} {p : Path} {e : DirectedEdge}
+lemma mutatePathContiguous_int_adj {t : PlacedTile} {tiles : Patch} {p : Path} {e : DirectedEdge}
   (h_val : ValidPatch tiles) (h_comp : CompletesPath tiles p)
   (h_mem : e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 (mutatePathContiguous t p)) (h_edge : e ∈ generateTileEdges t) :
-  ∃ t_adj ∈ tiles, t_adj ≠ t ∧ e ∈ generateTileEdges t_adj
-
+  ∃ t_adj ∈ tiles, t_adj ≠ t ∧ e ∈ generateTileEdges t_adj := by
+  sorry
 
 
 lemma contiguous_edge_inheritance (t : PlacedTile) (tiles : Patch) (p : Path) (e : DirectedEdge)
@@ -750,7 +759,7 @@ lemma self_intersection_iff_not_simple (p : Path) :
 lemma anchor_forced_in_other {tiles1 tiles2 : Patch} {p : Path} {t : PlacedTile}
   (h_len : p.length = 5) (h_w_valid : ValidBoundary p)
   (h_val1 : ValidPatch tiles1) (h_val2 : ValidPatch tiles2)
-  (h_unique : UniquelyDetermined p) (h_comp1 : CompletesPath tiles1 p) 
+  (h_unique : UniquelyDetermined p) (h_comp1 : CompletesPath tiles1 p)
   (h_comp2 : CompletesPath tiles2 p) (h_anchor : IsAnchor t p tiles1) :
   t ∈ tiles2 := by
   have h_ex2 := exists_anchor_tile_existence p h_comp2 h_len h_w_valid
@@ -831,7 +840,7 @@ lemma tile_area_bounded_by_enclosing_path (t : PlacedTile) (tiles : Patch) (p : 
   dsimp [OverlappingArea, MaxArea]
   omega
 
-lemma square_loop_cannot_enclose_tiles (p : Path) (h_loop : IsSquareLoop p) (_tiles : Patch) (_h_comp : CompletesPath tiles p) : 
+lemma square_loop_cannot_enclose_tiles (p : Path) (h_loop : IsSquareLoop p) (_tiles : Patch) (_h_comp : CompletesPath tiles p) :
   tiles = [] := by
   cases h_loop
 
@@ -848,7 +857,7 @@ lemma length_filter_neq_of_nodup {x : PlacedTile} {l : List PlacedTile} (h : x �
       · dsimp
         have h_mem : x ∈ tl := by
           cases h with
-          | head => 
+          | head =>
             rename_i h_dec
             simp only [decide_eq_true_iff] at h_dec
             contradiction
@@ -996,10 +1005,10 @@ lemma mem_patchVertices_iff (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles
   · rw [mem_patchVertices_filter t tiles v hv]
     tauto
 
-lemma patchVertices_inclusion_exclusion (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :  
-  (patchVertices (tiles.filter (fun x => decide (x ≠ t)))).nodup.length =   
-    (patchVertices tiles).nodup.length - (patchVertices [t]).nodup.length +   
-    ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length := by  
+lemma patchVertices_inclusion_exclusion (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :
+  (patchVertices (tiles.filter (fun x => decide (x ≠ t)))).nodup.length =
+    (patchVertices tiles).nodup.length - (patchVertices [t]).nodup.length +
+    ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length := by
   simp only [List.nodup, length_eraseDups_eq_card_toFinset, List.toFinset_filter, decide_eq_true_iff]
   simp_rw [← List.mem_toFinset, Finset.filter_mem_eq_inter]
   have h_union : (patchVertices tiles).toFinset = (patchVertices (tiles.filter (fun x => decide (x ≠ t)))).toFinset ∪ (patchVertices [t]).toFinset := by
@@ -1055,10 +1064,10 @@ lemma mem_patchEdges_iff (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) (
   · rw [mem_patchEdges_filter t tiles v hv]
     tauto
 
-lemma patchEdges_inclusion_exclusion (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :  
-  (patchEdges (tiles.filter (fun x => decide (x ≠ t)))).nodup.length =   
-    (patchEdges tiles).nodup.length - (patchEdges [t]).nodup.length +   
-    ((patchEdges (tiles.filter (fun x => decide (x ≠ t)))).filter (fun e => e ∈ patchEdges [t])).nodup.length := by  
+lemma patchEdges_inclusion_exclusion (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :
+  (patchEdges (tiles.filter (fun x => decide (x ≠ t)))).nodup.length =
+    (patchEdges tiles).nodup.length - (patchEdges [t]).nodup.length +
+    ((patchEdges (tiles.filter (fun x => decide (x ≠ t)))).filter (fun e => e ∈ patchEdges [t])).nodup.length := by
   simp only [List.nodup, length_eraseDups_eq_card_toFinset, List.toFinset_filter, decide_eq_true_iff]
   simp_rw [← List.mem_toFinset, Finset.filter_mem_eq_inter]
   have h_union : (patchEdges tiles).toFinset = (patchEdges (tiles.filter (fun x => decide (x ≠ t)))).toFinset ∪ (patchEdges [t]).toFinset := by
@@ -1170,23 +1179,30 @@ lemma single_tile_vertices_relation (t : PlacedTile) :
   · decide
 
 def IsAcyclicOpenWalk (t : PlacedTile) (tiles : Patch) : Prop :=
-  ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length =   
+  ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length =
   ((patchEdges (tiles.filter (fun x => decide (x ≠ t)))).filter (fun e => e ∈ patchEdges [t])).nodup.length + 1
+
+
 
 lemma open_boundary_window_is_walk (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :
   IsAcyclicOpenWalk t tiles := by
+  -- Unfold the definition to expose the underlying vertex/edge length equation
+  dsimp [IsAcyclicOpenWalk]
+  -- Since this is an unrefined topological core property, we isolate the balance step
   sorry
 
+
+
 lemma open_walk_vertex_edge_relation {t : PlacedTile} {tiles : Patch} (h : IsAcyclicOpenWalk t tiles) :
-  ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length =   
+  ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length =
   ((patchEdges (tiles.filter (fun x => decide (x ≠ t)))).filter (fun e => e ∈ patchEdges [t])).nodup.length + 1 := by
   dsimp [IsAcyclicOpenWalk] at h
   exact h
 
-lemma shared_boundary_path_constraint (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :  
-  ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length =   
-    ((patchEdges (tiles.filter (fun x => decide (x ≠ t)))).filter (fun e => e ∈ patchEdges [t])).nodup.length + 1 := by  
-  have h_path := open_boundary_window_is_walk t tiles h_in  
+lemma shared_boundary_path_constraint (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) :
+  ((patchVertices (tiles.filter (fun x => decide (x ≠ t)))).filter (fun v => v ∈ patchVertices [t])).nodup.length =
+    ((patchEdges (tiles.filter (fun x => decide (x ≠ t)))).filter (fun e => e ∈ patchEdges [t])).nodup.length + 1 := by
+  have h_path := open_boundary_window_is_walk t tiles h_in
   exact open_walk_vertex_edge_relation h_path
 
 
@@ -1244,14 +1260,14 @@ lemma patchEdges_subset_length (t : PlacedTile) (tiles : Patch) (h_in : t ∈ ti
   apply length_eraseDups_le_of_subset
   exact patchEdges_subset t tiles h_in
 
-lemma euler_characteristic_subtraction (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) (h_nodup : tiles.Nodup) :  
-  eulerCharacteristic (tiles.filter (fun x => decide (x ≠ t))) = eulerCharacteristic tiles := by  
-  dsimp [eulerCharacteristic]  
-  rw [patchVertices_inclusion_exclusion t tiles h_in]  
-  rw [patchEdges_inclusion_exclusion t tiles h_in]  
-  have h_tile_eq := single_tile_vertices_relation t  
-  have h_shared_eq := shared_boundary_path_constraint t tiles h_in  
-  have h_len := length_filter_neq_of_nodup h_in h_nodup  
+lemma euler_characteristic_subtraction (t : PlacedTile) (tiles : Patch) (h_in : t ∈ tiles) (h_nodup : tiles.Nodup) :
+  eulerCharacteristic (tiles.filter (fun x => decide (x ≠ t))) = eulerCharacteristic tiles := by
+  dsimp [eulerCharacteristic]
+  rw [patchVertices_inclusion_exclusion t tiles h_in]
+  rw [patchEdges_inclusion_exclusion t tiles h_in]
+  have h_tile_eq := single_tile_vertices_relation t
+  have h_shared_eq := shared_boundary_path_constraint t tiles h_in
+  have h_len := length_filter_neq_of_nodup h_in h_nodup
   dsimp at h_len
   have h_v_le := patchVertices_subset_length t tiles h_in
   have h_e_le := patchEdges_subset_length t tiles h_in
@@ -1259,24 +1275,28 @@ lemma euler_characteristic_subtraction (t : PlacedTile) (tiles : Patch) (h_in : 
   rw [Nat.cast_sub h_v_le, Nat.cast_sub h_e_le]
   omega
 
-lemma path_length_ge_five_of_nonempty_patch {tiles : Patch} {p : Path}
-  (h_nonempty : tiles ≠ []) (h_euler : eulerCharacteristic tiles = 1) (h_comp : CompletesPath tiles p) :
-  ¬ p.length < 5 := by
+
+
+lemma path_length_ge_five_of_nonempty_patch (p : Path) (tiles : Patch)
+  (h_nonempty : tiles ≠ []) (h_comp : CompletesPath tiles p) :
+  p.length ≥ 5 := by
   sorry
 
 lemma exists_sieve_window_of_ge_five {tiles : Patch} {p : Path}
   (h_nonempty : tiles ≠ []) (h_euler : eulerCharacteristic tiles = 1) (h_comp : CompletesPath tiles p) (h_len : ¬p.length < 5) :
-  ∃ (w : Path), SubPath w p ∧ w.length = 5 ∧ ValidBoundary w := sorry
+  ∃ (w : Path), SubPath w p ∧ w.length = 5 ∧ ValidBoundary w := by
+  sorry
 
-lemma find_lookahead_window {tiles : Patch} {p : Path} 
+
+
+
+lemma find_lookahead_window {tiles : Patch} {p : Path}
   (h_nonempty : tiles ≠ []) (h_euler : eulerCharacteristic tiles = 1) (h_comp : CompletesPath tiles p) :
   ∃ (w : Path), SubPath w p ∧ w.length = 5 ∧ ValidBoundary w := by
-  -- We perform a casing step on the length of the path.
-  -- Any valid closed macro-perimeter path must have a length of at least 5.
   by_cases h_len : p.length < 5
-  · -- Contradiction branch: A valid simple closed perimeter path cannot have less than 5 elements
-    have h_geom_absurd := path_length_ge_five_of_nonempty_patch h_nonempty h_euler h_comp
-    exact False.elim (h_geom_absurd h_len)
+  · -- Contradiction branch: A valid macro-perimeter cannot have less than 5 elements
+    have h_geom_absurd := path_length_ge_five_of_nonempty_patch p tiles h_nonempty h_comp
+    omega
   · -- Constructive branch: Scan the list to find the first length-5 window segment
     have h_sieve := exists_sieve_window_of_ge_five h_nonempty h_euler h_comp h_len
     rcases h_sieve with ⟨w, h_sub, h_w_len, h_boundary⟩
@@ -1284,6 +1304,8 @@ lemma find_lookahead_window {tiles : Patch} {p : Path}
 
 def mutatePathNonContiguous (_t : PlacedTile) (_p : Path) : List Path :=
   [] -- structural placeholder for split boundary loops
+
+
 
 def partitionPatchComponents (t : PlacedTile) (tiles : Patch) : List Patch :=
   match tiles with
@@ -1296,12 +1318,35 @@ def partitionPatchComponents (t : PlacedTile) (tiles : Patch) : List Patch :=
       | [] => [[head]]
       | c :: cs => (head :: c) :: cs
 
-lemma euler_invariant_sub_patch {t : PlacedTile} {tiles : Patch} {sub : Patch} {p sub_path : Path}  
-  (_h_euler : eulerCharacteristic tiles = 1)  
-  (_h_mem : sub ∈ partitionPatchComponents t tiles)  
-  (h_sub_path : sub_path ∈ mutatePathNonContiguous t p)  
-  (_h_comp : CompletesPath sub sub_path) :  
-  eulerCharacteristic sub = 1 := by  
+
+lemma non_empty_patch_perimeter {tiles : Patch} {p : Path} (h_ne : tiles ≠ []) (h_comp : CompletesPath tiles p) : p ≠ [] := by
+  sorry
+
+lemma partition_erase_tile (t head : PlacedTile) (tiles : Patch) (sub_patch : Patch)
+  (h_mem : sub_patch ∈ partitionPatchComponents t tiles) (h_in : head ∈ sub_patch) :
+  sub_patch.erase head ∈ partitionPatchComponents t (tiles.erase head) := by
+  sorry
+
+lemma partition_erase_tile_helper {t head : PlacedTile} {tiles2 : Patch} {sub_patch sub_other : Patch}
+  (h_mem : sub_other ∈ partitionPatchComponents t tiles2) (h_perm : List.Perm sub_patch sub_other) :
+  sub_other ∈ partitionPatchComponents t (tiles2.erase head) := by
+  sorry
+
+lemma validPatch_erase (tiles : Patch) (t : PlacedTile) (h : ValidPatch tiles) :
+  ValidPatch (tiles.erase t) := by
+  sorry
+
+lemma filter_erase_comm (tiles : Patch) (t head : PlacedTile) (h : head ≠ t) :
+  (tiles.erase head).filter (fun x => decide (x ≠ t)) = (tiles.filter (fun x => decide (x ≠ t))).erase head := by
+  sorry
+
+
+lemma euler_invariant_sub_patch {t : PlacedTile} {tiles : Patch} {sub : Patch} {p sub_path : Path}
+  (_h_euler : eulerCharacteristic tiles = 1)
+  (_h_mem : sub ∈ partitionPatchComponents t tiles)
+  (h_sub_path : sub_path ∈ mutatePathNonContiguous t p)
+  (_h_comp : CompletesPath sub sub_path) :
+  eulerCharacteristic sub = 1 := by
   dsimp [mutatePathNonContiguous] at h_sub_path
   cases h_sub_path
 
@@ -1309,7 +1354,12 @@ lemma euler_invariant_sub_patch {t : PlacedTile} {tiles : Patch} {sub : Patch} {
 lemma non_contiguous_edge_mutation (t : PlacedTile) (tiles : Patch) (p : Path)
   (h_not_contig : ¬ AreEdgesContiguousInPath t p) (h_comp : CompletesPath tiles p) :
   ∀ sub_patch ∈ partitionPatchComponents t tiles, ∃ sub_path ∈ mutatePathNonContiguous t p,
-    CompletesPath sub_patch sub_path ∧ patchSize sub_patch < patchSize tiles := sorry
+    CompletesPath sub_patch sub_path ∧ patchSize sub_patch < patchSize tiles := by
+  intro sub_patch h_mem
+  -- Under the current structural placeholder, mutatePathNonContiguous expands to []
+  dsimp [mutatePathNonContiguous]
+  -- Isolate the structural component size inequality for manual tracking
+  sorry
 
 lemma mem_partition_of_not_eq {t head : PlacedTile} {tail : List PlacedTile} (h_eq : head ≠ t) :
   ∃ sub_patch ∈ partitionPatchComponents t (head :: tail), head ∈ sub_patch := by
@@ -1380,24 +1430,8 @@ lemma mem_filter_of_mem_partition {t x : PlacedTile} {tiles : Patch} {sub : Patc
           simp at h_ih
           exact Or.inr h_ih
 
-axiom non_empty_patch_perimeter {tiles : Patch} {p : Path} (h_ne : tiles ≠ []) (h_comp : CompletesPath tiles p) : p ≠ []
-
-axiom partition_erase_tile (t head : PlacedTile) (tiles : Patch) (sub_patch : Patch)
-  (h_mem : sub_patch ∈ partitionPatchComponents t tiles) (h_in : head ∈ sub_patch) :
-  sub_patch.erase head ∈ partitionPatchComponents t (tiles.erase head)
-
-axiom partition_erase_tile_helper {t head : PlacedTile} {tiles2 : Patch} {sub_patch sub_other : Patch}
-  (h_mem : sub_other ∈ partitionPatchComponents t tiles2) (h_perm : List.Perm sub_patch sub_other) :
-  sub_other ∈ partitionPatchComponents t (tiles2.erase head)
-
-axiom validPatch_erase (tiles : Patch) (t : PlacedTile) (h : ValidPatch tiles) :
-  ValidPatch (tiles.erase t)
-
-axiom filter_erase_comm (tiles : Patch) (t head : PlacedTile) (h : head ≠ t) :
-  (tiles.erase head).filter (fun x => decide (x ≠ t)) = (tiles.filter (fun x => decide (x ≠ t))).erase head
-
-lemma nil_case_boundary_exhaustion {t : PlacedTile} {tiles2 : Patch} {p : Path}  
-  (h_val2 : ValidPatch tiles2) (h_comp1 : CompletesPath [] p) (h_comp2 : CompletesPath tiles2 p) :  
+lemma nil_case_boundary_exhaustion {t : PlacedTile} {tiles2 : Patch} {p : Path}
+  (h_val2 : ValidPatch tiles2) (h_comp1 : CompletesPath [] p) (h_comp2 : CompletesPath tiles2 p) :
   tiles2.filter (fun x => decide (x ≠ t)) = [] := by
   induction tiles2 with
   | nil =>
@@ -1423,8 +1457,8 @@ lemma nil_case_boundary_exhaustion {t : PlacedTile} {tiles2 : Patch} {p : Path}
         cases ht_empty
     contradiction
 
-lemma ih_tail_of_head_eq {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_eq : head = t)  
-  (h_ih : ∀ sub_patch ∈ partitionPatchComponents t (head :: tail), ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :  
+lemma ih_tail_of_head_eq {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_eq : head = t)
+  (h_ih : ∀ sub_patch ∈ partitionPatchComponents t (head :: tail), ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
   ∀ sub_patch ∈ partitionPatchComponents t tail, ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other := by
   intro sub_patch h_sub
   apply h_ih
@@ -1437,8 +1471,8 @@ lemma perm_of_cons_perm {α : Type} (x : α) (l1 l2 : List α) (h : (x :: l1).Pe
   l1.Perm l2 := by
   exact List.Perm.cons_inv h
 
-lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_ne : head ≠ t)  
-  (h_ih : ∀ sub_patch ∈ partitionPatchComponents t (head :: tail), ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :  
+lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_ne : head ≠ t)
+  (h_ih : ∀ sub_patch ∈ partitionPatchComponents t (head :: tail), ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
   ∀ sub_patch ∈ partitionPatchComponents t tail, ∃ sub_other ∈ partitionPatchComponents t (tiles2.erase head), List.Perm sub_patch sub_other := by
   intro sub_patch h_sub
   have h_dec : decide (head = t) = false := decide_eq_false h_ne
@@ -1580,5 +1614,3 @@ lemma find_matching_component (t : PlacedTile) (tiles : Patch) (p : Path) (sub_p
 -- #print axioms hereditary_prune
 -- #print axioms validPatch_singleton
 -- #print axioms validPatch_empty
-
-
