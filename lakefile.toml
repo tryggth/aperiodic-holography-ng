@@ -8,3 +8,8 @@ name = "SpectreNG"
 [[lean_exe]]
 name = "spectreng"
 root = "Main"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+
