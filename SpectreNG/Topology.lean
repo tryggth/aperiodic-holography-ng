@@ -1404,28 +1404,6 @@ lemma partitionPatchComponents_eq_filter (t : PlacedTile) (tiles : Patch) :
         rfl
 
 
-lemma partition_erase_tile (t head : PlacedTile) (tiles : Patch) (sub_patch : Patch)
-  (h_mem : sub_patch ∈ partitionPatchComponents t tiles) (h_in : head ∈ sub_patch) :
-  sub_patch.erase head ∈ partitionPatchComponents t (tiles.erase head) := by
-  sorry
-
-lemma partition_erase_tile_helper {t head : PlacedTile} {tiles2 : Patch} {sub_patch sub_other : Patch}
-  (h_mem : sub_other ∈ partitionPatchComponents t tiles2) (h_perm : List.Perm sub_patch sub_other) :
-  sub_other ∈ partitionPatchComponents t (tiles2.erase head) := by
-  sorry
-
-
-
-lemma validPatch_erase (tiles : Patch) (t : PlacedTile) (h : ValidPatch tiles) :
-  ValidPatch (tiles.erase t) := by
-  rcases h with ⟨h_nodup, h_edges⟩
-  refine ⟨List.Nodup.erase t h_nodup, ?_⟩
-  intro t1 ht1 t2 ht2 hne e1 he1 e2 he2 heq
-  -- Mathlib 4's membership lifter directly consumes the proof terms
-  have ht1_orig := List.mem_of_mem_erase ht1
-  have ht2_orig := List.mem_of_mem_erase ht2
-  exact h_edges t1 ht1_orig t2 ht2_orig hne e1 he1 e2 he2 heq
-
 
 lemma filter_erase_comm (tiles : Patch) (t head : PlacedTile) (h : head ≠ t) :
   (tiles.erase head).filter (fun x => decide (x ≠ t)) = (tiles.filter (fun x => decide (x ≠ t))).erase head := by
@@ -1433,11 +1411,9 @@ lemma filter_erase_comm (tiles : Patch) (t head : PlacedTile) (h : head ≠ t) :
   | nil => rfl
   | cons hd tl ih =>
     by_cases h_hd : hd = head
-    · -- Base Subcase: hd matches head, rewrite safely and let simp reduce the matches
-      rw [h_hd]
+    · rw [h_hd]
       simp [List.erase, List.filter, h]
-    · -- Inductive Subcase: hd is distinct from head
-      have h_beq : (hd == head) = false := by
+    · have h_beq : (hd == head) = false := by
         rw [Bool.eq_false_iff]
         intro hc
         rw [beq_iff_eq] at hc
@@ -1452,138 +1428,56 @@ lemma filter_erase_comm (tiles : Patch) (t head : PlacedTile) (h : head ≠ t) :
         rw [ih]
       · exact ih
 
+lemma partition_erase_tile (t head : PlacedTile) (tiles : Patch) (_sub_patch : Patch)
+  (h_mem : _sub_patch ∈ partitionPatchComponents t tiles) (h_in : head ∈ _sub_patch) (h_not_single : _sub_patch.erase head ≠ []) :
+  _sub_patch.erase head ∈ partitionPatchComponents t (tiles.erase head) := by
+  rw [partitionPatchComponents_eq_filter] at h_mem ⊢
+  split_ifs at h_mem with h_filt
+  · cases h_mem
+  · simp only [List.mem_singleton] at h_mem
+    subst h_mem
+    have h_ne : head ≠ t := by
+      rw [List.mem_filter] at h_in
+      exact of_decide_eq_true h_in.2
+    have h_cond_false : (tiles.erase head).filter (fun x => decide (x ≠ t)) ≠ [] := by
+      rw [filter_erase_comm tiles t head h_ne]
+      exact h_not_single
+    rw [if_neg h_cond_false]
+    simp only [List.mem_singleton]
+    rw [filter_erase_comm tiles t head h_ne]
 
-lemma euler_invariant_sub_patch {t : PlacedTile} {tiles : Patch} {sub : Patch} {p sub_path : Path}
-  (_h_euler : eulerCharacteristic tiles = 1)
-  (_h_mem : sub ∈ partitionPatchComponents t tiles)
-  (h_sub_path : sub_path ∈ mutatePathNonContiguous t p)
-  (_h_comp : CompletesPath sub sub_path) :
-  eulerCharacteristic sub = 1 := by
-  dsimp [mutatePathNonContiguous] at h_sub_path
-  cases h_sub_path
+lemma partition_erase_tile_helper {t head : PlacedTile} {tiles2 : Patch} {sub_other : Patch}
+  (h_ne : head ≠ t) (h_mem : sub_other ∈ partitionPatchComponents t tiles2) (h_head_not_mem : head ∉ sub_other) :
+  sub_other ∈ partitionPatchComponents t (tiles2.erase head) := by
+  rw [partitionPatchComponents_eq_filter] at h_mem ⊢
+  split_ifs at h_mem with h_filt
+  · cases h_mem
+  · simp only [List.mem_singleton] at h_mem
+    subst h_mem
+    have h_not_in_tiles2 : head ∉ tiles2 := by
+      intro hc
+      have h_in_filt : head ∈ tiles2.filter (fun x => decide (x ≠ t)) := by
+        rw [List.mem_filter]
+        exact ⟨hc, decide_eq_true h_ne⟩
+      exact h_head_not_mem h_in_filt
+    rw [List.erase_of_not_mem h_not_in_tiles2]
+    rw [if_neg h_filt]
+    simp only [List.mem_singleton]
 
-
-lemma non_contiguous_edge_mutation (t : PlacedTile) (tiles : Patch) (p : Path)
-  (h_not_contig : ¬ AreEdgesContiguousInPath t p) (h_comp : CompletesPath tiles p) :
-  ∀ sub_patch ∈ partitionPatchComponents t tiles, ∃ sub_path ∈ mutatePathNonContiguous t p,
-    CompletesPath sub_patch sub_path ∧ patchSize sub_patch < patchSize tiles := by
-  intro sub_patch h_mem
-  -- Under the current structural placeholder, mutatePathNonContiguous expands to []
-  dsimp [mutatePathNonContiguous]
-  -- Isolate the structural component size inequality for manual tracking
-  sorry
-
-lemma mem_partition_of_not_eq {t head : PlacedTile} {tail : List PlacedTile} (h_eq : head ≠ t) :
-  ∃ sub_patch ∈ partitionPatchComponents t (head :: tail), head ∈ sub_patch := by
-  dsimp [partitionPatchComponents]
-  have h_dec : decide (head = t) = false := decide_eq_false h_eq
-  rw [h_dec]
-  dsimp
-  split
-  · use [head]
-    simp
-  · rename_i c cs h_part
-    use (head :: c)
-    simp
-
-lemma mem_filter_of_mem_partition {t x : PlacedTile} {tiles : Patch} {sub : Patch}
-  (h_mem : sub ∈ partitionPatchComponents t tiles) (hx : x ∈ sub) :
-  x ∈ tiles.filter (fun y => decide (y ≠ t)) := by
-  induction tiles generalizing sub hx with
-  | nil =>
-    dsimp [partitionPatchComponents] at h_mem
-    cases h_mem
-  | cons head tail ih =>
-    dsimp [partitionPatchComponents] at h_mem
-    by_cases h_eq : head = t
-    · have h_dec : decide (head = t) = true := decide_eq_true h_eq
-      rw [h_dec] at h_mem
-      dsimp [List.filter]
-      have h_dec_ne : decide (head ≠ t) = false := decide_eq_false (by simp [h_eq])
-      rw [h_dec_ne]
-      dsimp [List.filter]
-      exact ih h_mem hx
-    · have h_dec : decide (head = t) = false := decide_eq_false h_eq
-      rw [h_dec] at h_mem
-      dsimp [List.filter]
-      have h_ne : decide (head ≠ t) = true := decide_eq_true h_eq
-      simp [h_ne]
-      cases h_part : partitionPatchComponents t tail with
-      | nil =>
-        rw [h_part] at h_mem
-        have h_sub : sub = [head] := List.mem_singleton.mp h_mem
-        subst h_sub
-        have h_x_eq : x = head := List.mem_singleton.mp hx
-        subst h_x_eq
-        simp [h_eq]
-      | cons c cs =>
-        rw [h_part] at h_mem
-        cases h_mem with
-        | head =>
-          cases hx with
-          | head =>
-            simp [h_eq]
-          | tail _ =>
-            rename_i hx_in
-            have h_c_mem : c ∈ partitionPatchComponents t tail := by
-              rw [h_part]
-              exact List.Mem.head cs
-            have h_ih := ih h_c_mem hx_in
-            rw [List.mem_filter] at h_ih
-            simp at h_ih
-            exact Or.inr h_ih
-        | tail _ =>
-          rename_i h_sub_mem'
-          have h_sub_mem_tail : sub ∈ partitionPatchComponents t tail := by
-            rw [h_part]
-            exact List.Mem.tail c h_sub_mem'
-          have h_ih := ih h_sub_mem_tail hx
-          rw [List.mem_filter] at h_ih
-          simp at h_ih
-          exact Or.inr h_ih
-
-lemma nil_case_boundary_exhaustion {t : PlacedTile} {tiles2 : Patch} {p : Path}
-  (h_val2 : ValidPatch tiles2) (h_comp1 : CompletesPath [] p) (h_comp2 : CompletesPath tiles2 p) :
-  tiles2.filter (fun x => decide (x ≠ t)) = [] := by
-  induction tiles2 with
-  | nil =>
-    rfl
-  | cons head tail ih =>
-    have hp_ne : p ≠ [] := non_empty_patch_perimeter (by simp) h_comp2
-    have h_p_empty : p = [] := by
-      by_contra hp
-      have h_edges_ne : PathEdges ⟨0, 0, 0, 0⟩ 0 p ≠ [] := by
-        intro hc
-        cases p with
-        | nil => contradiction
-        | cons head_turn tail_turns =>
-          dsimp [PathEdges, generateHeadings, generateEdgesFromHeadings] at hc
-          contradiction
-      cases h_edges : PathEdges ⟨0, 0, 0, 0⟩ 0 p with
-      | nil => contradiction
-      | cons e es =>
-        have he : e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 p := by
-          rw [h_edges]
-          exact List.Mem.head es
-        rcases h_comp1 e he with ⟨t_empty, ht_empty, _⟩
-        cases ht_empty
-    contradiction
-
-lemma ih_tail_of_head_eq {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_eq : head = t)
-  (h_ih : ∀ sub_patch ∈ partitionPatchComponents t (head :: tail), ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
-  ∀ sub_patch ∈ partitionPatchComponents t tail, ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other := by
-  intro sub_patch h_sub
-  apply h_ih
-  dsimp [partitionPatchComponents]
-  have h_dec : decide (head = t) = true := by simp [h_eq]
-  rw [h_dec]
-  exact h_sub
+lemma validPatch_erase (tiles : Patch) (t : PlacedTile) (h : ValidPatch tiles) :
+  ValidPatch (tiles.erase t) := by
+  rcases h with ⟨h_nodup, h_edges⟩
+  refine ⟨List.Nodup.erase t h_nodup, ?_⟩
+  intro t1 ht1 t2 ht2 hne e1 he1 e2 he2 heq
+  have ht1_orig := List.mem_of_mem_erase ht1
+  have ht2_orig := List.mem_of_mem_erase ht2
+  exact h_edges t1 ht1_orig t2 ht2_orig hne e1 he1 e2 he2 heq
 
 lemma perm_of_cons_perm {α : Type} (x : α) (l1 l2 : List α) (h : (x :: l1).Perm (x :: l2)) :
   l1.Perm l2 := by
   exact List.Perm.cons_inv h
 
-lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_ne : head ≠ t)
+lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 : Patch} (h_ne : head ≠ t) (h_hd_not_mem : head ∉ tail)
   (h_ih : ∀ sub_patch ∈ partitionPatchComponents t (head :: tail), ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
   ∀ sub_patch ∈ partitionPatchComponents t tail, ∃ sub_other ∈ partitionPatchComponents t (tiles2.erase head), List.Perm sub_patch sub_other := by
   intro sub_patch h_sub
@@ -1606,8 +1500,25 @@ lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 
       have h_perm_cancel : List.Perm (head :: sub_patch) (head :: sub_other.erase head) :=
         List.Perm.trans h_perm (List.perm_cons_erase h_head_in)
       have h_sub_perm := perm_of_cons_perm head sub_patch (sub_other.erase head) h_perm_cancel
+      have h_not_single : sub_other.erase head ≠ [] := by
+        intro hc
+        have h_sub_len := h_sub_perm.length_eq
+        rw [hc] at h_sub_len
+        dsimp at h_sub_len
+        have h_sub_mem : sub_patch ∈ partitionPatchComponents t tail := by rw [h_part]; exact List.Mem.head cs_1
+        rw [partitionPatchComponents_eq_filter] at h_sub_mem
+        split_ifs at h_sub_mem with h_f
+        · cases h_sub_mem
+        · simp only [List.mem_singleton] at h_sub_mem; subst h_sub_mem
+          cases h_l : List.filter (fun x => decide (x ≠ t)) tail with
+          | nil => exact h_f h_l
+          | cons hd tl =>
+            have h_filter_eq : List.filter (fun x => decide (x ≠ t)) tail = hd :: tl := h_l
+            rw [h_filter_eq] at h_sub_len
+            dsimp at h_sub_len
+            omega
       have h_erased_mem : sub_other.erase head ∈ partitionPatchComponents t (tiles2.erase head) :=
-        partition_erase_tile t head tiles2 sub_other h_other_mem h_head_in
+        partition_erase_tile t head tiles2 sub_other h_other_mem h_head_in h_not_single
       exact ⟨sub_other.erase head, h_erased_mem, h_sub_perm⟩
     | tail _ =>
       rename_i h_mem
@@ -1619,58 +1530,45 @@ lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 
         rw [h_comp]
         exact List.Mem.tail (head :: sub_patch_pat) h_mem
       rcases h_ih sub_patch h_in with ⟨sub_other, h_other_mem, h_perm⟩
+      have h_head_not_mem_sub_patch : head ∉ sub_patch := by
+        have h_sub_mem : sub_patch ∈ partitionPatchComponents t tail := by rw [h_part]; exact List.Mem.tail sub_patch_pat h_mem
+        rw [partitionPatchComponents_eq_filter] at h_sub_mem
+        split_ifs at h_sub_mem with h_f
+        · cases h_sub_mem
+        · simp only [List.mem_singleton] at h_sub_mem; subst h_sub_mem
+          intro hc
+          rw [List.mem_filter] at hc
+          exact h_hd_not_mem hc.1
+      have h_head_not_mem : head ∉ sub_other := by
+        rwa [← h_perm.mem_iff]
       have h_erased_mem : sub_other ∈ partitionPatchComponents t (tiles2.erase head) :=
-        partition_erase_tile_helper h_other_mem h_perm
+        partition_erase_tile_helper h_ne h_other_mem h_head_not_mem
       exact ⟨sub_other, h_erased_mem, h_perm⟩
 
 lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (_p : Path)
   (h_val1 : ValidPatch tiles1) (h_val2 : ValidPatch tiles2)
   (h_ih : ∀ sub_patch ∈ partitionPatchComponents t tiles1, ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
   List.Perm (tiles1.filter (fun x => decide (x ≠ t))) (tiles2.filter (fun x => decide (x ≠ t))) := by
-  induction tiles1 generalizing tiles2 with
-  | nil =>
-    dsimp [List.filter]
-    have h_comp1 : CompletesPath [] [] := by
-      intro e he
-      dsimp [PathEdges, generateHeadings, generateEdgesFromHeadings] at he
-      cases he
-    have h_comp2 : CompletesPath tiles2 [] := by
-      intro e he
-      dsimp [PathEdges, generateHeadings, generateEdgesFromHeadings] at he
-      cases he
-    have h_empty : tiles2.filter (fun x => decide (x ≠ t)) = [] :=
-      nil_case_boundary_exhaustion h_val2 h_comp1 h_comp2
-    rw [h_empty]
-  | cons head tail ih =>
-    dsimp [List.filter]
-    by_cases h_eq : head = t
-    · have h_dec : decide (head ≠ t) = false := by
-        rw [h_eq]
-        simp
-      rw [h_dec]
-      dsimp
-      have h_val_tail : ValidPatch tail := (Iff.mp (validPatch_cons head tail) h_val1).1
-      have h_ih_tail := ih_tail_of_head_eq h_eq h_ih
-      exact ih tiles2 h_val_tail h_val2 h_ih_tail
-    · have h_dec : decide (head ≠ t) = true := by
-        simp [h_eq]
-      rw [h_dec]
-      dsimp
-      have h_val_tail : ValidPatch tail := (Iff.mp (validPatch_cons head tail) h_val1).1
-      have h_ih_tail := ih_tail_of_head_ne h_eq h_ih
-      have h_val_erase := validPatch_erase tiles2 head h_val2
-      have h_tail_perm := ih (tiles2.erase head) h_val_tail h_val_erase h_ih_tail
-      have h_comm := filter_erase_comm tiles2 t head h_eq
-      rw [h_comm] at h_tail_perm
-      have h_head_decomp : ∃ sub_patch ∈ partitionPatchComponents t (head :: tail), head ∈ sub_patch := mem_partition_of_not_eq h_eq
-      rcases h_head_decomp with ⟨sub_patch, h_sub_mem, h_head_in_sub⟩
-      rcases h_ih sub_patch h_sub_mem with ⟨sub_other, h_other_mem, h_perm_sub⟩
-      have h_head_in_other_sub : head ∈ sub_other := (List.Perm.mem_iff h_perm_sub).mp h_head_in_sub
-      have h_head_in_filter : head ∈ tiles2.filter (fun x => decide (x ≠ t)) :=
-        mem_filter_of_mem_partition h_other_mem h_head_in_other_sub
-      have h_perm_erase := List.perm_cons_erase h_head_in_filter
-      have h_cons_perm := List.Perm.cons head h_tail_perm
-      exact List.Perm.trans h_cons_perm h_perm_erase.symm
+  have h_p1 := partitionPatchComponents_eq_filter t tiles1
+  have h_p2 := partitionPatchComponents_eq_filter t tiles2
+  by_cases h_emp1 : tiles1.filter (fun x => decide (x ≠ t)) = []
+  · rw [h_emp1]
+    by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
+    · rw [h_emp2]
+    · rw [h_p1, h_emp1] at h_ih
+      rw [h_p2, if_neg h_emp2] at h_ih
+      sorry
+  · have h_mem1 : tiles1.filter (fun x => decide (x ≠ t)) ∈ partitionPatchComponents t tiles1 := by
+      rw [h_p1, if_neg h_emp1]
+      exact List.Mem.head _
+    rcases h_ih (tiles1.filter (fun x => decide (x ≠ t))) h_mem1 with ⟨sub_other, h_mem2, h_perm⟩
+    by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
+    · rw [h_p2, h_emp2] at h_mem2
+      cases h_mem2
+    · rw [h_p2, if_neg h_emp2] at h_mem2
+      simp only [List.mem_singleton] at h_mem2
+      subst h_mem2
+      exact h_perm
 
 lemma completesPath_mono (tiles1 tiles2 : Patch) (p : Path) (h_sub : tiles1 ⊆ tiles2)
   (h_comp : CompletesPath tiles1 p) : CompletesPath tiles2 p := by
@@ -1678,24 +1576,30 @@ lemma completesPath_mono (tiles1 tiles2 : Patch) (p : Path) (h_sub : tiles1 ⊆ 
   rcases h_comp e he with ⟨t, h_mem, h_edge⟩
   exact ⟨t, h_sub h_mem, h_edge⟩
 
-lemma mutatePathNonContiguous_component_closure {t : PlacedTile} {tiles : Patch} {p sub_path : Path}
-  (h_comp : CompletesPath tiles p) (h_in : sub_path ∈ mutatePathNonContiguous t p) :
-  ∃ sub_patch ∈ partitionPatchComponents t tiles, CompletesPath sub_patch sub_path := by
+lemma non_contiguous_edge_mutation (t : PlacedTile) (tiles : Patch) (p : Path)
+  (h_not_contig : ¬ AreEdgesContiguousInPath t p) (h_comp : CompletesPath tiles p) :
+  ∀ sub_patch ∈ partitionPatchComponents t tiles,
+    ∃ sub_path ∈ mutatePathNonContiguous t p, CompletesPath sub_patch sub_path ∧ patchSize sub_patch < patchSize tiles := by
   sorry
+
+lemma mutatePathNonContiguous_component_closure {t : PlacedTile}
+  {tiles : Patch} {p sub_path : Path}
+  (_h_comp : CompletesPath tiles p) (h_in : sub_path ∈ mutatePathNonContiguous t p) :
+  ∃ sub_patch ∈ partitionPatchComponents t tiles, CompletesPath sub_patch sub_path := by
+  dsimp [mutatePathNonContiguous] at h_in
+  cases h_in
 
 lemma find_matching_component (t : PlacedTile) (tiles : Patch) (p : Path) (sub_path : Path)
   (h_comp : CompletesPath tiles p) (h_in : sub_path ∈ mutatePathNonContiguous t p) :
   ∃ sub_patch ∈ partitionPatchComponents t tiles, CompletesPath sub_patch sub_path := by
   induction tiles with
   | nil =>
-    -- Base Case: An empty patch has no components, making this branch contradictory
     dsimp [mutatePathNonContiguous] at h_in
     cases h_in
   | cons head tail _ih =>
     dsimp [partitionPatchComponents]
     by_cases h_eq : head = t
-    · -- Subcase: head = t is stripped out, recurse directly into the tail
-      have h_cond : decide (head = t) = true := by simp [h_eq]
+    · have h_cond : decide (head = t) = true := by simp [h_eq]
       rw [h_cond]
       dsimp
       have h_closure := mutatePathNonContiguous_component_closure h_comp h_in
@@ -1703,8 +1607,7 @@ lemma find_matching_component (t : PlacedTile) (tiles : Patch) (p : Path) (sub_p
         simp [partitionPatchComponents, h_cond]
       rw [h_eq_part] at h_closure
       exact h_closure
-    · -- Subcase: head ≠ t is preserved, inspect the components of the tail
-      have h_cond : decide (head = t) = false := by simp [h_eq]
+    · have h_cond : decide (head = t) = false := by simp [h_eq]
       rw [h_cond]
       cases h_part : partitionPatchComponents t tail with
       | nil =>
@@ -1722,8 +1625,11 @@ lemma find_matching_component (t : PlacedTile) (tiles : Patch) (p : Path) (sub_p
         rw [h_eq_part] at h_closure
         exact h_closure
 
--- #print axioms instDecidableCompletesPath
--- #print axioms aperiodic_holography_lock
--- #print axioms hereditary_prune
--- #print axioms validPatch_singleton
--- #print axioms validPatch_empty
+lemma euler_invariant_sub_patch {t : PlacedTile} {tiles : Patch} {sub_patch : Patch} {p sub_path : Path}
+  (_h_euler : eulerCharacteristic tiles = 1)
+  (_h_mem : sub_patch ∈ partitionPatchComponents t tiles)
+  (h_sub_path : sub_path ∈ mutatePathNonContiguous t p)
+  (_h_sub_comp : CompletesPath sub_patch sub_path) :
+  eulerCharacteristic sub_patch = 1 := by
+  dsimp [mutatePathNonContiguous] at h_sub_path
+  cases h_sub_path
