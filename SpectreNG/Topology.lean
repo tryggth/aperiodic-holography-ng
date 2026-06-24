@@ -1545,6 +1545,7 @@ lemma ih_tail_of_head_ne {t head : PlacedTile} {tail : List PlacedTile} {tiles2 
         partition_erase_tile_helper h_ne h_other_mem h_head_not_mem
       exact ⟨sub_other, h_erased_mem, h_perm⟩
 
+
 lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (_p : Path)
   (h_val1 : ValidPatch tiles1) (h_val2 : ValidPatch tiles2)
   (h_ih : ∀ sub_patch ∈ partitionPatchComponents t tiles1, ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
@@ -1555,9 +1556,12 @@ lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (
   · rw [h_emp1]
     by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
     · rw [h_emp2]
-    · rw [h_p1, h_emp1] at h_ih
-      rw [h_p2, if_neg h_emp2] at h_ih
-      sorry
+    · -- Under a valid completed rigidity loop, an empty sub-patch partition enforces a matching empty mirror
+      have h_vacuous : tiles2.filter (fun x => decide (x ≠ t)) = [] := by
+        rw [partitionPatchComponents_eq_filter] at h_ih
+        rw [h_emp1] at h_ih
+        sorry
+      rw [h_vacuous]
   · have h_mem1 : tiles1.filter (fun x => decide (x ≠ t)) ∈ partitionPatchComponents t tiles1 := by
       rw [h_p1, if_neg h_emp1]
       exact List.Mem.head _
@@ -1569,6 +1573,8 @@ lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (
       simp only [List.mem_singleton] at h_mem2
       subst h_mem2
       exact h_perm
+
+
 
 lemma completesPath_mono (tiles1 tiles2 : Patch) (p : Path) (h_sub : tiles1 ⊆ tiles2)
   (h_comp : CompletesPath tiles1 p) : CompletesPath tiles2 p := by
