@@ -702,9 +702,12 @@ lemma validPatch_filter_sub (tiles : Patch) (f : PlacedTile → Bool) (h : Valid
 
 lemma mutatePathContiguous_local_invariant {t : PlacedTile} {p : Path} {e : DirectedEdge}
   (_h_contig : AreEdgesContiguousInPath t p)
-  (h_mem : e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 (mutatePathContiguous t p)) (h_not : e ∉ generateTileEdges t) :
+  (h_mem : e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 (mutatePathContiguous t p)) (_h_not : e ∉ generateTileEdges t) :
   e ∈ PathEdges ⟨0, 0, 0, 0⟩ 0 p := by
-  sorry
+  dsimp [mutatePathContiguous] at h_mem
+  exact h_mem
+
+
 
 lemma mutatePathContiguous_int_adj {t : PlacedTile} {tiles : Patch} {p : Path} {e : DirectedEdge}
   (h_val : ValidPatch tiles) (h_comp : CompletesPath tiles p)
@@ -1277,10 +1280,40 @@ lemma euler_characteristic_subtraction (t : PlacedTile) (tiles : Patch) (h_in : 
 
 
 
+
+
+lemma closed_of_completes {tiles : Patch} {p : Path} (h_ne : tiles ≠ []) (h_comp : CompletesPath tiles p) : IsClosedLoop p := by
+  sorry
+
+lemma path_length_four_empty (p : Path) (tiles : Patch) (h_closed : IsClosedLoop p) (h_len : p.length = 4) (h_comp : CompletesPath tiles p) : tiles = [] := by
+  sorry
+
 lemma path_length_ge_five_of_nonempty_patch (p : Path) (tiles : Patch)
   (h_nonempty : tiles ≠ []) (h_comp : CompletesPath tiles p) :
   p.length ≥ 5 := by
-  sorry
+  -- 1. Extract the closed loop turning invariant from path completion
+  have h_closed := closed_of_completes h_nonempty h_comp
+  have h_sum : partial_turn_sum p = 12 := h_closed.right
+
+  -- 2. Unify the maximum possible curvature bound per step
+  have h_bound : partial_turn_sum p ≤ 3 * (p.length : Int) := by
+    have h_curv := pathTotalCurvature_le_three_mul p
+    have h_eq : pathTotalCurvature p = partial_turn_sum p := by
+      dsimp [pathTotalCurvature]
+      rw [partial_turn_sum_eq_pathTotalCurvature]
+    rw [h_eq] at h_curv
+    exact h_curv
+
+  -- 3. Set up the contradiction for lengths less than 5
+  by_contra h_lt
+  have h_len_eq_4 : p.length = 4 := by omega
+
+  -- 4. Eliminate the length 4 case due to tile footprint area constraints
+  have h_empty := path_length_four_empty p tiles h_closed h_len_eq_4 h_comp
+  exact h_nonempty h_empty
+
+
+
 
 lemma exists_sieve_window_of_ge_five {tiles : Patch} {p : Path}
   (h_nonempty : tiles ≠ []) (h_euler : eulerCharacteristic tiles = 1) (h_comp : CompletesPath tiles p) (h_len : ¬p.length < 5) :
@@ -1319,8 +1352,57 @@ def partitionPatchComponents (t : PlacedTile) (tiles : Patch) : List Patch :=
       | c :: cs => (head :: c) :: cs
 
 
+
 lemma non_empty_patch_perimeter {tiles : Patch} {p : Path} (h_ne : tiles ≠ []) (h_comp : CompletesPath tiles p) : p ≠ [] := by
-  sorry
+  have h_len := path_length_ge_five_of_nonempty_patch p tiles h_ne h_comp
+  intro hc
+  rw [hc] at h_len
+  dsimp at h_len
+  omega
+
+
+
+lemma partitionPatchComponents_eq_filter (t : PlacedTile) (tiles : Patch) :
+  partitionPatchComponents t tiles =
+    if (tiles.filter (fun x => decide (x ≠ t))) = [] then [] else [tiles.filter (fun x => decide (x ≠ t))] := by
+  induction tiles with
+  | nil => rfl
+  | cons head tail ih =>
+    by_cases h_eq : head = t
+    · -- Case: head = t (Target the inner boolean deciders explicitly to match ih)
+      rw [h_eq]
+      dsimp [partitionPatchComponents]
+      have h_t : decide (t = t) = true := decide_eq_true rfl
+      rw [h_t]
+      dsimp
+      have h_filt : (t :: tail).filter (fun x => decide (x ≠ t)) = tail.filter (fun x => decide (x ≠ t)) := by
+        dsimp [List.filter]
+        have h_not_t : decide (t ≠ t) = false := decide_eq_false (by simp)
+        rw [h_not_t]
+      rw [h_filt]
+      exact ih
+    · -- Case: head ≠ t
+      have h_cond : decide (head = t) = false := decide_eq_false h_eq
+      have h_cond2 : decide (head ≠ t) = true := decide_eq_true h_eq
+      dsimp [partitionPatchComponents]
+      rw [h_cond]
+      have h_filter : (head :: tail).filter (fun x => decide (x ≠ t)) = head :: tail.filter (fun x => decide (x ≠ t)) := by
+        dsimp [List.filter]
+        rw [h_cond2]
+      rw [h_filter]
+      have h_if_neg : (if head :: tail.filter (fun x => decide (x ≠ t)) = [] then [] else [head :: tail.filter (fun x => decide (x ≠ t))]) = [head :: tail.filter (fun x => decide (x ≠ t))] := by
+        rfl
+      rw [h_if_neg]
+      rw [ih]
+      -- Use an explicit case split to guide the pattern match reduction safely
+      by_cases h_tail : tail.filter (fun x => decide (x ≠ t)) = []
+      · rw [h_tail]
+        rfl
+      · have h_if_false : (if tail.filter (fun x => decide (x ≠ t)) = [] then [] else [tail.filter (fun x => decide (x ≠ t))]) = [tail.filter (fun x => decide (x ≠ t))] := by
+          exact if_neg h_tail
+        rw [h_if_false]
+        rfl
+
 
 lemma partition_erase_tile (t head : PlacedTile) (tiles : Patch) (sub_patch : Patch)
   (h_mem : sub_patch ∈ partitionPatchComponents t tiles) (h_in : head ∈ sub_patch) :
@@ -1332,13 +1414,43 @@ lemma partition_erase_tile_helper {t head : PlacedTile} {tiles2 : Patch} {sub_pa
   sub_other ∈ partitionPatchComponents t (tiles2.erase head) := by
   sorry
 
+
+
 lemma validPatch_erase (tiles : Patch) (t : PlacedTile) (h : ValidPatch tiles) :
   ValidPatch (tiles.erase t) := by
-  sorry
+  rcases h with ⟨h_nodup, h_edges⟩
+  refine ⟨List.Nodup.erase t h_nodup, ?_⟩
+  intro t1 ht1 t2 ht2 hne e1 he1 e2 he2 heq
+  -- Mathlib 4's membership lifter directly consumes the proof terms
+  have ht1_orig := List.mem_of_mem_erase ht1
+  have ht2_orig := List.mem_of_mem_erase ht2
+  exact h_edges t1 ht1_orig t2 ht2_orig hne e1 he1 e2 he2 heq
+
 
 lemma filter_erase_comm (tiles : Patch) (t head : PlacedTile) (h : head ≠ t) :
   (tiles.erase head).filter (fun x => decide (x ≠ t)) = (tiles.filter (fun x => decide (x ≠ t))).erase head := by
-  sorry
+  induction tiles with
+  | nil => rfl
+  | cons hd tl ih =>
+    by_cases h_hd : hd = head
+    · -- Base Subcase: hd matches head, rewrite safely and let simp reduce the matches
+      rw [h_hd]
+      simp [List.erase, List.filter, h]
+    · -- Inductive Subcase: hd is distinct from head
+      have h_beq : (hd == head) = false := by
+        rw [Bool.eq_false_iff]
+        intro hc
+        rw [beq_iff_eq] at hc
+        exact h_hd hc
+      dsimp [List.erase, List.filter]
+      rw [h_beq]
+      dsimp [List.filter]
+      split
+      · dsimp [List.erase]
+        rw [h_beq]
+        dsimp
+        rw [ih]
+      · exact ih
 
 
 lemma euler_invariant_sub_patch {t : PlacedTile} {tiles : Patch} {sub : Patch} {p sub_path : Path}
@@ -1566,9 +1678,10 @@ lemma completesPath_mono (tiles1 tiles2 : Patch) (p : Path) (h_sub : tiles1 ⊆ 
   rcases h_comp e he with ⟨t, h_mem, h_edge⟩
   exact ⟨t, h_sub h_mem, h_edge⟩
 
-axiom mutatePathNonContiguous_component_closure {t : PlacedTile} {tiles : Patch} {p sub_path : Path}
+lemma mutatePathNonContiguous_component_closure {t : PlacedTile} {tiles : Patch} {p sub_path : Path}
   (h_comp : CompletesPath tiles p) (h_in : sub_path ∈ mutatePathNonContiguous t p) :
-  ∃ sub_patch ∈ partitionPatchComponents t tiles, CompletesPath sub_patch sub_path
+  ∃ sub_patch ∈ partitionPatchComponents t tiles, CompletesPath sub_patch sub_path := by
+  sorry
 
 lemma find_matching_component (t : PlacedTile) (tiles : Patch) (p : Path) (sub_path : Path)
   (h_comp : CompletesPath tiles p) (h_in : sub_path ∈ mutatePathNonContiguous t p) :

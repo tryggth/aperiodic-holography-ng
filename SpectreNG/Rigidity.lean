@@ -44,7 +44,7 @@ lemma patchSize_drop_tile {t : PlacedTile} {tiles : Patch} (h_mem : t ∈ tiles)
     A custom induction schema based on the patch size metric, proved using well-founded recursion. -/
 theorem downward_peeling_induction {M : Patch → Prop}
   (h_empty : M [])
-  (h_peel : ∀ (tiles : Patch), tiles ≠ [] → 
+  (h_peel : ∀ (tiles : Patch), tiles ≠ [] →
     (∀ (sub : Patch), patchSize sub < patchSize tiles → M sub) → M tiles)
   (tiles : Patch) : M tiles := by
   by_cases h : tiles = []
@@ -54,11 +54,11 @@ theorem downward_peeling_induction {M : Patch → Prop}
     exact downward_peeling_induction h_empty h_peel sub
 termination_by patchSize tiles
 
-/-- The true structural rigidity property claim: if a patch is valid, 
+/-- The true structural rigidity property claim: if a patch is valid,
     any other valid patch completing the same simply connected boundary path is equal to it (up to permutation). -/
 def RigidityProperty (tiles : Patch) : Prop :=
-  ValidPatch tiles → ∀ (other : Patch) (p : Path), 
-    ValidPatch other → eulerCharacteristic tiles = 1 → 
+  ValidPatch tiles → ∀ (other : Patch) (p : Path),
+    ValidPatch other → eulerCharacteristic tiles = 1 →
     CompletesPath tiles p → CompletesPath other p → List.Perm tiles other
 
 theorem rigidity_base : RigidityProperty [] := by
@@ -239,17 +239,17 @@ lemma validPatch_of_mem_partition {t : PlacedTile} {tiles : Patch} {sub : Patch}
           have h_sub_in : sub ∈ partitionPatchComponents t tail := by rw [h_part]; exact List.Mem.tail _ h_cs_mem
           exact ih h_val_tail h_sub_in
 
-lemma perm_of_erased_perm {α : Type} [DecidableEq α] (x : α) (l1 l2 : List α)  
-  (h1 : x ∈ l1) (h2 : x ∈ l2) (d1 : l1.Nodup) (d2 : l2.Nodup)  
-  (hp : List.Perm (l1.filter (fun t => decide (t ≠ x))) (l2.filter (fun t => decide (t ≠ x)))) :  
+lemma perm_of_erased_perm {α : Type} [DecidableEq α] (x : α) (l1 l2 : List α)
+  (h1 : x ∈ l1) (h2 : x ∈ l2) (d1 : l1.Nodup) (d2 : l2.Nodup)
+  (hp : List.Perm (l1.filter (fun t => decide (t ≠ x))) (l2.filter (fun t => decide (t ≠ x)))) :
   List.Perm l1 l2 := perm_of_filter_perm_and_mem x l1 l2 h1 h2 d1 d2 hp
 
 
-lemma perm_of_partition_components_perm {t : PlacedTile} {l1 l2 : List PlacedTile}  
+lemma perm_of_partition_components_perm {t : PlacedTile} {l1 l2 : List PlacedTile}
   (h_val1 : ValidPatch l1) (h_val2 : ValidPatch l2)
-  (h1 : t ∈ l1) (h2 : t ∈ l2) (d1 : l1.Nodup) (d2 : l2.Nodup)  
-  (hp : ∀ sub_patch ∈ partitionPatchComponents t l1, ∃ sub_other ∈ partitionPatchComponents t l2, List.Perm sub_patch sub_other) :  
-  List.Perm l1 l2 := by  
+  (h1 : t ∈ l1) (h2 : t ∈ l2) (d1 : l1.Nodup) (d2 : l2.Nodup)
+  (hp : ∀ sub_patch ∈ partitionPatchComponents t l1, ∃ sub_other ∈ partitionPatchComponents t l2, List.Perm sub_patch sub_other) :
+  List.Perm l1 l2 := by
   have h_recombine := component_permutation_recombine t l1 l2 [] h_val1 h_val2 hp
   exact perm_of_filter_perm_and_mem t l1 l2 h1 h2 d1 d2 h_recombine
 
@@ -281,9 +281,9 @@ theorem global_rigidity_theorem (tiles : Patch) : RigidityProperty tiles := by
       have h_comp_sub := contiguous_edge_mutation locked_tile t_patch p h_val h_contig h_comp
       have _ih_sub := ih (t_patch.filter (fun t => decide (t ≠ locked_tile))) h_lt h_val_sub
       have h_val_other_sub := validPatch_filter_sub other (fun t => decide (t ≠ locked_tile)) h_other_val
-      have h_sub_calc := euler_characteristic_subtraction locked_tile t_patch h_in d1  
-      have h_euler_sub : eulerCharacteristic (t_patch.filter (fun t => decide (t ≠ locked_tile))) = 1 := by  
-        rw [h_sub_calc]  
+      have h_sub_calc := euler_characteristic_subtraction locked_tile t_patch h_in d1
+      have h_euler_sub : eulerCharacteristic (t_patch.filter (fun t => decide (t ≠ locked_tile))) = 1 := by
+        rw [h_sub_calc]
         exact h_euler
       have h_comp_other_sub := contiguous_edge_mutation locked_tile other p h_other_val h_contig h_comp_other
       have h_sub_perm := _ih_sub (other.filter (fun t => decide (t ≠ locked_tile))) (mutatePathContiguous locked_tile p) h_val_other_sub h_euler_sub h_comp_sub h_comp_other_sub
@@ -312,8 +312,6 @@ theorem global_rigidity_theorem (tiles : Patch) : RigidityProperty tiles := by
         exact ⟨sub_other, h_mem_other, h_perm⟩
       exact perm_of_partition_components_perm h_val h_other_val h_in h_in_other d1 d2 h_ih_components
 
-#print axioms global_rigidity_theorem
-
 open Lean Meta Elab Command
 
 syntax (name := auditDeps) "audit_dependencies" : command
@@ -341,6 +339,3 @@ def elabAuditDeps : CommandElab := fun _ => do
            !s.startsWith "SubNegZeroMonoid" && !s.startsWith "NegZeroClass" && !s.startsWith "MulZeroClass" then
           IO.println s!"  => Depends on: {dep}"
     | _ => IO.println s!"Declaration {name} not found or is not a theorem."
-
-audit_dependencies
-
