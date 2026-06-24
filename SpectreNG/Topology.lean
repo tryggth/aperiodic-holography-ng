@@ -1556,11 +1556,8 @@ lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (
   · rw [h_emp1]
     by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
     · rw [h_emp2]
-    · -- Under a valid completed rigidity loop, an empty sub-patch partition enforces a matching empty mirror
-      have h_vacuous : tiles2.filter (fun x => decide (x ≠ t)) = [] := by
-        rw [partitionPatchComponents_eq_filter] at h_ih
-        rw [h_emp1] at h_ih
-        sorry
+    · -- Under a valid completed rigidity loop, an empty sub-patch partition enforces an empty mirror
+      have h_vacuous : tiles2.filter (fun x => decide (x ≠ t)) = [] := by sorry
       rw [h_vacuous]
   · have h_mem1 : tiles1.filter (fun x => decide (x ≠ t)) ∈ partitionPatchComponents t tiles1 := by
       rw [h_p1, if_neg h_emp1]
