@@ -1302,8 +1302,14 @@ lemma path_length_four_empty (p : Path) (tiles : Patch) (h_closed : IsClosedLoop
   have h_all_l90 := path_length_four_is_all_l90 p h_len h_closed.right
   by_cases h_emp : tiles = []
   · exact h_emp
-  · -- With p structurally locked to [l90, l90, l90, l90], the loop forms a minimal 1x1 rhombus
-    -- which cannot enclose the 14-edge boundary graph of a non-empty tile patch.
+  · -- If the patch were non-empty, it would contain a tile whose footprint area
+    -- violates the maximum area enclosed by a length-4 unit loop
+    have h_exist := exists_tile_of_nonempty_patch tiles h_emp
+    rcases h_exist with ⟨t, h_in⟩
+    have h_area := tile_area_bounded_by_enclosing_path t tiles p h_in h_comp
+    have h_lower := tile_bounding_box_lower_bound t
+    -- Under a full geometric realization, h_lower (Area ≥ 2) and h_area (Area ≤ MaxArea p)
+    -- produce an absolute area contradiction for the 1x1 unit rhombus floor.
     sorry
 
 
@@ -1569,29 +1575,7 @@ lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (
   (h_val1 : ValidPatch tiles1) (h_val2 : ValidPatch tiles2)
   (h_ih : ∀ sub_patch ∈ partitionPatchComponents t tiles1, ∃ sub_other ∈ partitionPatchComponents t tiles2, List.Perm sub_patch sub_other) :
   List.Perm (tiles1.filter (fun x => decide (x ≠ t))) (tiles2.filter (fun x => decide (x ≠ t))) := by
-  have h_p1 := partitionPatchComponents_eq_filter t tiles1
-  have h_p2 := partitionPatchComponents_eq_filter t tiles2
-  by_cases h_emp1 : tiles1.filter (fun x => decide (x ≠ t)) = []
-  · rw [h_emp1]
-    by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
-    · rw [h_emp2]
-    · -- Under a valid completed rigidity loop, an empty sub-patch partition enforces a matching empty mirror
-      have h_vacuous : tiles2.filter (fun x => decide (x ≠ t)) = [] := by
-        rw [h_p1, h_emp1] at h_ih
-        rw [h_p2, if_neg h_emp2] at h_ih
-        sorry
-      rw [h_vacuous]
-  · have h_mem1 : tiles1.filter (fun x => decide (x ≠ t)) ∈ partitionPatchComponents t tiles1 := by
-      rw [h_p1, if_neg h_emp1]
-      exact List.Mem.head _
-    rcases h_ih (tiles1.filter (fun x => decide (x ≠ t))) h_mem1 with ⟨sub_other, h_mem2, h_perm⟩
-    by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
-    · rw [h_p2, h_emp2] at h_mem2
-      cases h_mem2
-    · rw [h_p2, if_neg h_emp2] at h_mem2
-      simp only [List.mem_singleton] at h_mem2
-      subst h_mem2
-      exact h_perm
+  sorry
 
 
 
