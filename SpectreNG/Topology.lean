@@ -1279,14 +1279,33 @@ lemma euler_characteristic_subtraction (t : PlacedTile) (tiles : Patch) (h_in : 
   omega
 
 
-
+lemma path_length_four_is_all_l90 (p : Path) (h_len : p.length = 4) (h_sum : partial_turn_sum p = 12) :
+  p = [Turn.l90, Turn.l90, Turn.l90, Turn.l90] := by
+  rcases p with _ | ⟨t1, _ | ⟨t2, _ | ⟨t3, _ | ⟨t4, tail⟩⟩⟩⟩
+  · dsimp at h_len; omega
+  · dsimp at h_len; omega
+  · dsimp at h_len; omega
+  · dsimp at h_len; omega
+  · cases tail with
+    | nil =>
+      dsimp [partial_turn_sum, turnStepToInt, turnCurvature] at h_sum
+      cases t1 <;> cases t2 <;> cases t3 <;> cases t4 <;> simp_all
+    | cons hd tl =>
+      dsimp at h_len; omega
 
 
 lemma closed_of_completes {tiles : Patch} {p : Path} (h_ne : tiles ≠ []) (h_comp : CompletesPath tiles p) : IsClosedLoop p := by
   sorry
 
+
 lemma path_length_four_empty (p : Path) (tiles : Patch) (h_closed : IsClosedLoop p) (h_len : p.length = 4) (h_comp : CompletesPath tiles p) : tiles = [] := by
-  sorry
+  have h_all_l90 := path_length_four_is_all_l90 p h_len h_closed.right
+  by_cases h_emp : tiles = []
+  · exact h_emp
+  · -- With p structurally locked to [l90, l90, l90, l90], the loop forms a minimal 1x1 rhombus
+    -- which cannot enclose the 14-edge boundary graph of a non-empty tile patch.
+    sorry
+
 
 lemma path_length_ge_five_of_nonempty_patch (p : Path) (tiles : Patch)
   (h_nonempty : tiles ≠ []) (h_comp : CompletesPath tiles p) :
@@ -1556,8 +1575,11 @@ lemma component_permutation_recombine (t : PlacedTile) (tiles1 tiles2 : Patch) (
   · rw [h_emp1]
     by_cases h_emp2 : tiles2.filter (fun x => decide (x ≠ t)) = []
     · rw [h_emp2]
-    · -- Under a valid completed rigidity loop, an empty sub-patch partition enforces an empty mirror
-      have h_vacuous : tiles2.filter (fun x => decide (x ≠ t)) = [] := by sorry
+    · -- Under a valid completed rigidity loop, an empty sub-patch partition enforces a matching empty mirror
+      have h_vacuous : tiles2.filter (fun x => decide (x ≠ t)) = [] := by
+        rw [h_p1, h_emp1] at h_ih
+        rw [h_p2, if_neg h_emp2] at h_ih
+        sorry
       rw [h_vacuous]
   · have h_mem1 : tiles1.filter (fun x => decide (x ≠ t)) ∈ partitionPatchComponents t tiles1 := by
       rw [h_p1, if_neg h_emp1]
